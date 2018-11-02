@@ -1,5 +1,7 @@
 package com.qyt1902.controller.qytpic;
 
+import com.qyt1902.entity.SPic;
+import com.qyt1902.service.rxpic.SPicService;
 import com.qyt1902.util.FastDFSClient;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.io.FilenameUtils;
@@ -18,16 +20,19 @@ import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.util.Date;
 import java.util.Iterator;
 
 @Controller
 @RequestMapping(value = "/rxPic")
 public class RxPicController {
     private static final Logger logger = LoggerFactory.getLogger(RxPicController.class);
-
+    @Autowired
+    private SPicService sPicService;
     @RequestMapping(value = "/uploadRxPic",method = RequestMethod.POST)
     @ResponseBody
     public String returnSuccess(HttpServletRequest request) {
+
         String ret="";
         try{
             FastDFSClient client = new FastDFSClient("tracker_server.conf");
@@ -42,7 +47,19 @@ public class RxPicController {
                     File file =fi.getStoreLocation();
                     String ext = FilenameUtils.getExtension(fi.getName());
                     String uploadFile = client.uploadFile(file.getAbsolutePath(), ext);
-                    ret=toJson(uploadFile);
+
+                    SPic sPic=new SPic();
+                    sPic.setName(fi.getName());
+                    sPic.setUrl(ret);
+                    sPic.setCreateTime(new Date());
+                    sPic.setUpdateTime(new Date());
+                    int num=sPicService.insert(sPic);
+                    if(num>0){
+                        ret=toJson(uploadFile);
+                    }else{
+                        ret=toJson("保存失败！");
+                    }
+
                 }
             }
         }catch (Exception e){
